@@ -32,14 +32,33 @@ const stylePropsPriority = {
   "Other Style Props": 52,
 } as const;
 type Priority = typeof stylePropsPriority;
-
-type PriorityGroup = {
-  name: string;
+type PriorityKey = keyof Priority;
+type PriorityTuple = TuplifyUnion<PriorityKey>;
+type PriorityGroup<T extends PriorityKey> = {
+  name: T;
   keys: readonly string[];
-  priority: Priority[keyof Priority];
+  priority: Priority[T];
 };
+type PriorityGroupList<T extends PriorityKey[] = PriorityTuple> = T extends [...infer U, infer Element]
+  ? U extends PriorityKey[]
+    ? Element extends PriorityKey
+      ? [...PriorityGroupList<U>, PriorityGroup<Element>]
+      : never
+    : never
+  : T;
 
-const priorityGroups: readonly PriorityGroup[] = [
+type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
+type LastOf<T> = UnionToIntersection<T extends any ? () => T : never> extends () => infer R ? R : never;
+
+// TS4.0+
+type Push<T extends any[], V> = [...T, V];
+
+// TS4.1+
+type TuplifyUnion<T, L = LastOf<T>, N = [T] extends [never] ? true : false> = true extends N
+  ? []
+  : Push<TuplifyUnion<Exclude<T, L>>, L>;
+
+const priorityGroups: PriorityGroupList = [
   {
     name: "System",
     keys: ["as", "sx", "layerStyle", "textStyle"],
